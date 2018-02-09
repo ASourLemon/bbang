@@ -5,11 +5,7 @@
 #define F_CPU 16000000L
 
 
-int isOn;
-
 void setup(){
-	
-	isOn = 1;
 	
 	cli();
 	
