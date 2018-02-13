@@ -1,9 +1,26 @@
+#include <avr/io.h>
+#include <stdint.h>
+
+#define F_CPU 16000000UL
+#define _CLK DDB0
+#define _SDI DDB1
+
+#define BAUD 9600
+#define BAUDRATE F_CPU/16/BAUD-1
+
+
+#define _BAUD 115200
+#define _BIT_TIME 8.68055
+#define _HALF_BIT_TIME 4.34027
+
+#include <util/delay.h>
 #include <avr/interrupt.h>
-#include "include/bitbang_uart.h"
 
 
 
-
+void toogle_onboard_led() {
+	PORTB ^= (1 << PORTB5);
+}
 void setup_pin_modes(){
 	
 	// Config pin 13 as output
@@ -17,7 +34,6 @@ void setup_pin_modes(){
 	DDRB &= ~(1 << _SDI); 
 	//DDRB |= (1 << _SDI);
 }
-
 void setup_internal_int() {
 	
 	// Disable timer0 and timer2
@@ -46,31 +62,97 @@ void setup_external_int() {
 	EIMSK |= (1 << INT0);
 	
 }
+void setup_serial_tx(){
+	UCSR0B = (1<<TXEN0);							// Transmitter Enable
+	UCSR0C = (1<<UCSZ00) | (1<<UCSZ01);				// 8 bit character size
+	UBRR0H = (BAUDRATE >> 8);						// Higher part of baudrate value
+	UBRR0L = BAUDRATE;								// Lower part of baudrate value
+}
+void send_char(uint8_t c){
+	while( ( UCSR0A & ( 1 << UDRE0 ) ) == 0 );
+	UDR0 = c;
+}
+void debug_print_bin(uint16_t d){
+	// Debug print
+	for(uint8_t b = 15;b < 16; b--){
+		if(d & (1 << b)) {
+			send_char(49);
+		}
+		else {
+			send_char(48);
+		}
+	}
+}
+void debug_print_hex(uint16_t d){
+	// Debug print
+	for(uint8_t b = 0;b < 4; b++){
+		send_char(d);
+		d << 4;
+	}
+}
+
+void setup_special_timer() {
+	
+	// Disable timer0 and timer1
+	TIMSK0 = 0;
+	TIMSK1 = 0;
+	
+	// Max of 8us
+	OCR2A = 200;
+	
+	// CTC mode 2
+	TCCR2A |= (1 << WGM21);	
+	// No prescaler
+	TCCR2B |= (1 << CS20);
+	
+	//Set interrupt on compare match
+	TIMSK2 |= (1 << OCIE2A);
+
+}
 
 
+uint8_t packet_rx() {
+	uint8_t d = 0;
+	while(PINB & 2);
+	TCNT2 = 0;
+	while(TCNT2 < 69)
+	for(uint8_t bits=0;bits<8;bits++){
+		TCNT2 = 0;
+		while(TCNT2 < 138);
+		d >>= 1;
+		if(PINB & 2) {
+			d |= 0x80;
+		}
+	}
+	return d;
+}
 
-int on = 0;
+
 int main(void) {
-	
+
+	setup_serial_tx();
 	setup_pin_modes();
-
-	RX_packet();
-
+	setup_special_timer();
+	cli();
 	
+	
+	uint8_t d0 = packet_rx();
+	send_char(d0);
+	
+	
+	toogle_onboard_led();
 }
 
 /*
-ISR (TIMER1_COMPA_vect)
+ISR (TIMER2_COMPA_vect)
 {
 	cli();
-	toogle_onboard_led();
 	sei();
 }
-
 ISR (INT0_vect)
 {
 	cli();
 
 	sei();
-}*/
-
+}
+*/
