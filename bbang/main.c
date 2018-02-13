@@ -31,8 +31,8 @@ void setup_pin_modes(){
 	//DDRB |= (1 << _CLK);
 	
 	// Config pin 9 as input (Serial Data In)
-	DDRB &= ~(1 << _SDI); 
-	//DDRB |= (1 << _SDI);
+	//DDRB &= ~(1 << _SDI); 
+	DDRB |= (1 << _SDI);
 }
 void setup_internal_int() {
 	
@@ -108,6 +108,7 @@ void setup_special_timer() {
 	//Set interrupt on compare match
 	TIMSK2 |= (1 << OCIE2A);
 
+	cli();
 }
 
 
@@ -127,19 +128,52 @@ uint8_t packet_rx() {
 	return d;
 }
 
+void packet_tx(uint8_t d) {
+
+	//while(PINB & 1);
+	
+	// start bit (low)
+	TCNT2 = 0;
+	PORTB &= ~2; 
+	while(TCNT2 < 138);
+	
+	// data bits
+	for(uint8_t bits=0;bits<8;bits++){
+		TCNT2 = 0;
+		if(d & 1) {
+			PORTB |= 2;
+		}
+		else {
+			PORTB &= ~2;
+		}
+		d >>= 1;
+		while(TCNT2 < 138);
+	}
+	
+	// stop bit (HIGH)
+	TCNT2 = 0;
+	PORTB |= 2;
+	while(TCNT2 < 138);
+}
+
 
 int main(void) {
 
 	setup_serial_tx();
 	setup_pin_modes();
 	setup_special_timer();
-	cli();
+	
+	//Line should be high 
+	PORTB |= 2;
+	
+	uint8_t d = 0x37;
+	send_char(d);
+	packet_tx(d);
 	
 	
-	uint8_t d0 = packet_rx();
-	send_char(d0);
+	PORTB |= 2;
 	
-	
+	//send_char(d);
 	toogle_onboard_led();
 }
 
