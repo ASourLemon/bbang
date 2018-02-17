@@ -14,6 +14,8 @@ int main() {
 	setup();
 	
 	while(1) {
+		//transmitByte();
+		//sleep(1);
 		receiveByte();
 		sleep(1);
 	}
@@ -51,6 +53,7 @@ void receiveByte() {
 	{
 		unsigned char rx_buffer[2];
 		int rx_length = -1;
+		int i;
 		while(rx_length < 1) {
 			rx_length = read(fd, (void*)rx_buffer, 1);
 			if (rx_length < 0) { printf("Error!\n"); }
@@ -59,7 +62,6 @@ void receiveByte() {
 			{
 				rx_buffer[rx_length] = '\0';
 				printf("%i bytes read : %s\n", rx_length, rx_buffer);
-				printf("\n");
 			}
 		}
 	}
@@ -72,6 +74,8 @@ void transmitByte() {
 	
 	p_tx_buffer = &tx_buffer[0];
 	*p_tx_buffer++ = 'a';
+	//*p_tx_buffer++ = 'b';
+	//*p_tx_buffer++ = 'c';
 	
 	if (fd != -1)
 	{
