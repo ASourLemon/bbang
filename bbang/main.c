@@ -15,8 +15,9 @@
 #define _OUTPUT_PORT PORTB
 
 #define _CLOCK_BIT 0
-#define _SDATA_BIT 1
-#define _SIN_BIT 2
+#define _DTX_BIT 1
+#define _DRX_BIT 2
+#define _SIN_BIT 3
 #define _LED_BIT 5
 
 #define _SET_INPUT(x) _CONTROL_PORT &= ~(1 << x)
@@ -31,12 +32,14 @@
 #define _DEBUG_BAUD 9600
 #define _DEBUG_BAUDRATE F_CPU/16/_DEBUG_BAUD-1
 
+#include <avr/delay.h>
 
 
 void setup_pin_modes(){
 	_SET_INPUT(_CLOCK_BIT);
 	_SET_INPUT(_SIN_BIT);
-	_SET_INPUT(_SDATA_BIT);
+	_SET_INPUT(_DRX_BIT);
+	_SET_OUTPUT(_DTX_BIT);
 	_SET_OUTPUT(_LED_BIT);
 }
 void setup_internal_int() {
@@ -121,27 +124,27 @@ uint16_t packet_rx() {
 	uint8_t e = 0;
 
 	// wait for sender start bit
-	_WAIT_WHILE(_GET_INPUT(_SDATA_BIT));
+	_WAIT_WHILE(_GET_INPUT(_DRX_BIT));
 	
 	// start bit (low)
 	TCNT2 = 0;
 	_WAIT_WHILE(TCNT2 < 20); //FIXME?: This magic number should be closer to _HALF_BIT_TIME. 20 Works for my case
-	s = _GET_INPUT(_SDATA_BIT) ? 1 : 0;
+	s = _GET_INPUT(_DRX_BIT) ? 1 : 0;
 	
 	// data bits
 	TCNT2 = 0;
-	for(uint8_t bits=0;bits<16;bits++){
+	for(uint8_t bits=0;bits<8;bits++){
 		_WAIT_WHILE(TCNT2 < _BIT_TIME);
 		TCNT2 = 0;
 		d >>= 1;
-		if(_GET_INPUT(_SDATA_BIT)) {
-			d |= 0x8000;
+		if(_GET_INPUT(_DRX_BIT)) {
+			d |= 0x80;
 		}
 	}
 	
 	// stop bit (HIGH)
 	TCNT2 = 0;
-	e = _GET_INPUT(_SDATA_BIT) ? 1 : 0;
+	e = _GET_INPUT(_DRX_BIT) ? 1 : 0;
 	_WAIT_WHILE(TCNT2 < _BIT_TIME);
 	
 	// check for start OR stop bits errors
@@ -150,30 +153,30 @@ uint16_t packet_rx() {
 	}
 	return d;
 }
-void packet_tx(uint8_t packet) {
+void packet_tx(uint16_t packet) {
 	
 	// start bit (low)
 	TCNT2 = 0;
-	_SET_LOW(_SDATA_BIT);
-	_WAIT_WHILE(TCNT2 < 138);
+	_SET_LOW(_DTX_BIT);
+	_WAIT_WHILE(TCNT2 < _BIT_TIME);
 	
 	// data bits
-	for(uint8_t bits=0;bits<8;bits++){
+	for(uint8_t bits=0;bits<16;bits++){
 		TCNT2 = 0;
 		if(packet & 1) {
-			_SET_HIGH(_SDATA_BIT);
+			_SET_HIGH(_DTX_BIT);
 		}
 		else {
-			_SET_LOW(_SDATA_BIT);
+			_SET_LOW(_DTX_BIT);
 		}
 		packet >>= 1;
-		_WAIT_WHILE(TCNT2 < 138);
+		_WAIT_WHILE(TCNT2 < _BIT_TIME);
 	}
 	
 	// stop bit (HIGH)
 	TCNT2 = 0;
-	_SET_HIGH(_SDATA_BIT);
-	_WAIT_WHILE(TCNT2 < 138);
+	_SET_HIGH(_DTX_BIT);
+	_WAIT_WHILE(TCNT2 < _BIT_TIME);
 }
 
 
@@ -281,14 +284,14 @@ int main(void) {
 	setup_special_timer();
 	cli();
 	
-	_SET_OUTPUT(_SDATA_BIT);
-	
-	uint8_t b = 0B01100001;
+
+	uint16_t b = 0xB9A0;
 	while(1) {
 		packet_tx(b);
+		_delay_ms(1000);
 	}
 
-	
+
 
 
 	//_SET_HIGH(_SDATA_BIT);

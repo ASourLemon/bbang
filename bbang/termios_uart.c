@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>			//Used for UART
 #include <fcntl.h>			//Used for UART
 #include <termios.h>		//Used for UART
@@ -51,17 +52,23 @@ void receiveByte() {
 	
 	if (fd != -1)
 	{
-		unsigned char rx_buffer[2];
+		unsigned char rx_buffer[2] = {0, '\0'};
 		int rx_length = -1;
 		int i;
+		
 		while(rx_length < 1) {
 			rx_length = read(fd, (void*)rx_buffer, 1);
 			if (rx_length < 0) { printf("Error!\n"); }
 			else if (rx_length == 0) { printf("No data waiting\n"); }
 			else
 			{
-				rx_buffer[rx_length] = '\0';
-				printf("%i bytes read : %s\n", rx_length, rx_buffer);
+				unsigned char c = rx_buffer[0];
+				printf("%i bytes read : %c - ", rx_length, c);
+				for (i = 0; i < 8; i++) {
+					printf("%d", c & 0x80 ? 1 : 0);
+					c <<= 1;
+				}
+				printf("\n");
 			}
 		}
 	}
