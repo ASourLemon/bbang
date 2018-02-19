@@ -1,4 +1,4 @@
-MCU Programming
+# MCU Programming
 =======================================
 
 This is a repository for my microcontroller programming experiences. 
@@ -10,7 +10,7 @@ The target hardware is the Atmel ATmega328P.
 For testing, I used TERMIOS(3), 8Bit UART on a Raspberry Pi 3 Model B.
 
 
-References
+# References
 --------------------------------------
 - [Arduino Duemilanove Schematics](https://www.arduino.cc/en/uploads/Main/arduino-duemilanove-schematic.pdf)
 - [ATmega168/328 Port Manipulation](https://www.arduino.cc/en/Reference/PortManipulation)
