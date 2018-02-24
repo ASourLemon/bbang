@@ -1,16 +1,17 @@
-#include "general.h"
+#include "mcu_general.h"
 
 
 
 
 
 
-// Debug utils
+//* Debug utils
 void setup_debug_tx(){
-	UCSR0B = (1<<TXEN0);							// Transmitter Enable
-	UCSR0C = (1<<UCSZ00) | (1<<UCSZ01);				// 8 bit character size
-	UBRR0H = (_DEBUG_BAUDRATE >> 8);				// Higher part of baudrate value
-	UBRR0L = _DEBUG_BAUDRATE;						// Lower part of baudrate value
+	UCSR0B = (1<<TXEN0);					// Transmitter Enable
+	UCSR0C = (1<<UCSZ00) | (1<<UCSZ01);			// 8 bit character size
+	uint8_t higher = (_DEBUG_BAUDRATE >> 8);
+	UBRR0H = (higher);
+	UBRR0L = _DEBUG_BAUDRATE;
 }
 void send_char8(uint8_t c){
 	while(( UCSR0A & ( 1 << UDRE0 )) == 0 ){};
