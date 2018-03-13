@@ -1,4 +1,4 @@
-
+#include "data.h"
 
 volatile unsigned int *DWT_CYCCNT ;
 volatile unsigned int *DWT_CONTROL;
@@ -109,11 +109,20 @@ void setup() {
 }
 
 
-#define len 5000
+#define len 1
 uint16_t master_buf[len];
 uint32_t b_index = 0;
 uint16_t b = 0;
 uint16_t printing = 0;
+
+
+uint16_t path[] = { 0x15, 0x15, 0x13};
+uint16_t p_index = 0;
+
+
+uint16_t sending = 0;
+uint16_t packet_index = 0; 
+uint16_t chunk_index = 0;
 
 
 
@@ -131,7 +140,7 @@ void loop() {
   if(printing) {
     digitalWrite(13, HIGH);
     Serial.println(master_buf[b_index]);
-    delay(10);
+    delay(1);
     b_index++;
   }
   else {
@@ -144,9 +153,27 @@ void loop() {
     digitalWrite(2, HIGH);
 
 
-    master_buf[b_index] = b;
-    b_index++;
+    //master_buf[b_index] = b;
+    //b_index++;
 
+
+    if(packet_index < 12) {
+      
+      if(sending) {
+        b = injected_packets[packet_index-1][chunk_index];
+        chunk_index++;
+        if(chunk_index == 7) { sending = 0; }
+      }
+      else if(b == 0x8888) {
+        sending = 1;
+        packet_index++;
+        chunk_index = 0;
+      }
+
+
+      Serial.println(b);
+      
+    }
     
     tx_packet16(b);
     
