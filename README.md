@@ -3,6 +3,7 @@
 
 This is a repository for my microcontroller programming experiences. 
 
+
 For now, the goal is to implement a 16 bit, RS232-like, signal receiver.
 
 The target hardware is the Atmel ATmega328P.
